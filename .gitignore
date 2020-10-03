@@ -1,0 +1,6 @@
+# package directories
+backend/node_modules
+backend/.webpack
+
+# Serverless directories
+.serverless
