@@ -44,13 +44,34 @@ provider:
     USERS_TABLE: ${self:custom.tableName}
 
 functions:
+  Auth:
+    handler: src/lambda/auth/auth0Authorizer.handler
+
   hello:
     handler: src/handler.hello
     events:
       - http:
           method: get
-          path: /
+          path: /toto
           cors: true
+          authorizer: Auth
+  
+  # registerUser:
+  #   handler: src/lambda/auth/registerUser.handler
+  #   events:
+  #     - http:
+  #         method: post
+  #         path: /cart
+  #         cors: true
+  
+  # addShoppingItem:
+  #   handler: src/lambda/shopping/addShoppingItem.handler
+  #   events:
+  #     - http:
+  #         method: post
+  #         path: /cart
+  #         cors: true
+    
 #    The following are a few example events you can configure
 #    NOTE: Please make sure to change your handler code to work with those events
 #    Check the event documentation for details
