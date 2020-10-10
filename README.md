@@ -6,6 +6,7 @@ virtualenv venv --python=python3
 . venv/bin/activate
 python -m pip install --upgrade pip
 python -m pip install requests
+python -m pip install pytest-ordering
 
 ## Get a new token from the test API
 curl --request POST   --url https://dev-sey0m6-p.eu.auth0.com/oauth/token   --header 'content-type: application/json'   --data '{"client_id":"n0OVbi1nPYzFEEfozXlTJ3ZHm76XGNMY","client_secret":"8DzDppBlQzbRoYeT8D2cTa-ONRme7ghd6IfyHFkTUi9mYr73JQKuDEj-h2YZjC-D","audience":"https://dev-sey0m6-p.eu.auth0.com/api/v2/","grant_type":"client_credentials"}'
@@ -17,7 +18,7 @@ eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCIsImtpZCI6IlBTcXI2VXFLY3hHUW9xa3lQZTYwNiJ9.eyJ
 ## test fwk
 Make based
 
-In a shell:
+In a shell, start the backend:
 > . setenv.sh
 > make run-backend-offline
 
@@ -25,3 +26,41 @@ In another shell:
 > . setenv.sh
 > . venv/bin/activate
 > make test-offline
+
+## Check offline db contents:
+aws dynamodb list-tables --endpoint-url http://localhost:8000
+aws dynamodb scan --endpoint-url http://localhost:8000 --table-name "shoppingcart-users-dev"
+
+Design notes:
+
+Design a simple UI with like a few pages:
+1 - Login/register page
+2 - A create a shopping cart page or ask permission to access to an existing one belonging to someone else
+3 - MyShoppingCart
+ 2 frames
+ Frame0: list itself, each product is associated to a description and a picture and quantities
+ Frame1: pick and drop
+
+-- Or --
+1 Frame: the list itself as before and a + button to add new items and opening a choose UI
+
+Write a few python unit tests to exercise the different end points and operations...
+
+=> Some tables:
+A table of registered users
+A table of shoppingcarts, each shopping cart has:
+• a owner
+• a list of shared members with attributes (can add, only wish, can delete)
+• a list of items
+A table of shopping items, each item has:
+• a privacy attribute (public, private)
+• an ownership (for private items)
+• a link
+• a description
+• a category
+• a picture
+
+=> one S3 bucket
+Contains the pictures of the items
+ - public folder for all public items photos
+- private/<user> folder for private items

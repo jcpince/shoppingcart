@@ -11,7 +11,7 @@ test-offline: test-backend-offline test-frontend-offline
 
 test-backend-offline:
 	mkdir -p $(ROOTDIR)/logs
-	cd $(ROOTDIR)/unittests/backend && pytest-3 2>&1 |tee -a $(LOGSDIR)/test-bakend-offline.log
+	cd $(ROOTDIR)/unittests/backend && pytest 2>&1 |tee -a $(LOGSDIR)/test-bakend-offline.log
 
 test-frontend-offline:
 	@echo "No tests for the frontent yet..."

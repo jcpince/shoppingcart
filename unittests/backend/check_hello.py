@@ -1,20 +1,16 @@
 import requests
 import logging
 import json
-import os
+
+import URLHelper
 
 logger = logging.getLogger(__name__)
+urlHelper = URLHelper.URLHelper()
 
-BASE_URL = os.environ['BASE_URL']
-AUTH0_TOKEN = os.environ['AUTH0_TOKEN']
-auth0_headers = {
-    'Authorization': 'Bearer ' + AUTH0_TOKEN
-    }
-
-class CheckDBClass:    
+class CheckHelloClass:
     def getToto(self):
-        url = BASE_URL + "/toto"
-        resp = requests.get(url, headers=auth0_headers)
+        url = urlHelper.base_url + "/toto"
+        resp = requests.get(url, headers=urlHelper.auth0_header)
         return json.loads(resp.text)
     
     def base_check(self):
@@ -24,6 +20,6 @@ class CheckDBClass:
         assert(resp['text'] == 'Hello world')
 
 if __name__ == "__main__":
-    c = CheckDBClass()
+    c = CheckHelloClass()
     resp = c.getToto()
     print(resp)

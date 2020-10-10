@@ -8,3 +8,4 @@ backend/.webpack
 # Temporary directories
 logs
 __pycache__
+.dynamodb

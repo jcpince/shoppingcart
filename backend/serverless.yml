@@ -32,16 +32,32 @@ plugins:
 
 custom:
   usersTableName: 'shoppingcart-users-${self:provider.stage}'
+  dynamodb:
+    # If you only want to use DynamoDB Local in some stages, declare them here
+      stages:
+        - dev
+      start:
+        port: 8000
+        inMemory: true
+        heapInitial: 200m
+        heapMax: 1g
+        migrate: true
+        seed: true
+        convertEmptyValues: true
+      # Uncomment only if you already have a DynamoDB running locally
+      # noStart: true
 
 provider:
   name: aws
   runtime: nodejs12.x
 
   stage: ${opt:stage, 'dev'}
-  region: ${opt:region, 'us-east-1'}
+  region: ${opt:region, 'eu-west-3'}
   
   environment:
-    USERS_TABLE: ${self:custom.tableName}
+    USERS_TABLE: ${self:custom.usersTableName}
+    BACKEND_NAME: "AWS"
+    _X_AMZN_TRACE_ID: "toto"
 
 functions:
   Auth:
@@ -56,13 +72,32 @@ functions:
           cors: true
           authorizer: Auth
   
-  # registerUser:
-  #   handler: src/lambda/auth/registerUser.handler
-  #   events:
-  #     - http:
-  #         method: post
-  #         path: /cart
-  #         cors: true
+  registerUser:
+    handler: src/lambda/users/AddUser.handler
+    events:
+      - http:
+          method: put
+          path: /users/add
+          cors: true
+          authorizer: Auth
+  
+  unregisterUser:
+    handler: src/lambda/users/DelUser.handler
+    events:
+      - http:
+          method: delete
+          path: /users/delete
+          cors: true
+          authorizer: Auth
+  
+  connectUser:
+    handler: src/lambda/users/ConnectUser.handler
+    events:
+      - http:
+          method: put
+          path: /users/connect
+          cors: true
+          authorizer: Auth
   
   # addShoppingItem:
   #   handler: src/lambda/shopping/addShoppingItem.handler
@@ -113,7 +148,28 @@ functions:
 #      variable2: value2
 
 # you can add CloudFormation resource templates here
-#resources:
+resources:
+  Resources:
+    UsersTable:
+      Type: AWS::DynamoDB::Table
+      Properties:
+        AttributeDefinitions:
+          - AttributeName: name
+            AttributeType: S
+        KeySchema:
+          - AttributeName: name
+            KeyType: HASH
+        BillingMode: PAY_PER_REQUEST
+        TableName: ${self:provider.environment.USERS_TABLE}
+        # LocalSecondaryIndexes:
+        #   - IndexName: userIndex
+        #     KeySchema:
+        #       - AttributeName: uuid
+        #         KeyType: HASH
+        #       - AttributeName: name
+        #         KeyType: RANGE
+        #     Projection:
+        #       ProjectionType: ALL # What attributes will be copied to an index
 #  Resources:
 #    NewResource:
 #      Type: AWS::S3::Bucket

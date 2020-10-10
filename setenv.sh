@@ -6,6 +6,8 @@ OFFLINE_URL=http://localhost:3000/dev
 export BASE_URL=$OFFLINE_URL
 export AUTH0_TOKEN=$TEST_TOKEN
 
+export PYTHONPATH=$BASEDIR/unittests/common:
+
 thispython=`which python`
 if [ ! "$thispython" == "$BASEDIR/venv/bin/python" ]; then
     echo "If you plan to run the test suite in this shell, please first source venv/bin/activate"
