@@ -4,3 +4,7 @@ backend/.webpack
 
 # Serverless directories
 .serverless
+
+# Temporary directories
+logs
+__pycache__
