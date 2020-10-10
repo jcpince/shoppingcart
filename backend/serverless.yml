@@ -46,6 +46,23 @@ custom:
         convertEmptyValues: true
       # Uncomment only if you already have a DynamoDB running locally
       # noStart: true
+  
+  documentation:
+    api:
+      info:
+        version: v1.0.0
+        title: ShoppingCart API
+        description: Backend for shopping cart management
+    models:
+      - name: RegisterUser
+        contentType: application/json
+        schema: ${file(models/users/register-user.json)}
+      - name: UnregisterUser
+        contentType: application/json
+        schema: ${file(models/users/unregister-user.json)}
+      - name: ConnectUser
+        contentType: application/json
+        schema: ${file(models/users/connect-user.json)}
 
 provider:
   name: aws
@@ -57,7 +74,7 @@ provider:
   environment:
     USERS_TABLE: ${self:custom.usersTableName}
     BACKEND_NAME: "AWS"
-    _X_AMZN_TRACE_ID: "toto"
+    # _X_AMZN_TRACE_ID: "toto"
 
 functions:
   Auth:
@@ -80,6 +97,24 @@ functions:
           path: /users/add
           cors: true
           authorizer: Auth
+          reqValidatorName: RequestBodyValidator
+          documentation:
+            summary: Register a new user
+            description: Register a new user
+            requestModels:
+              'application/json': RegisterUser
+    iamRoleStatements:
+      - Effect: Allow
+        Action:
+          - dynamodb:PutItem
+          - dynamodb:Query
+        Resource: arn:aws:dynamodb:${self:provider.region}:*:table/${self:provider.environment.USERS_TABLE}
+      - Effect: "Allow"
+        Action:
+          - "xray:PutTraceSegments"
+          - "xray:PutTelemetryRecords"
+        Resource:
+          - "*"
   
   unregisterUser:
     handler: src/lambda/users/DelUser.handler
@@ -89,6 +124,24 @@ functions:
           path: /users/delete
           cors: true
           authorizer: Auth
+          reqValidatorName: RequestBodyValidator
+          documentation:
+            summary: Unregister a new user
+            description: Unregister a new user
+            requestModels:
+              'application/json': UnregisterUser
+    iamRoleStatements:
+      - Effect: Allow
+        Action:
+          - dynamodb:DeleteItem
+          - dynamodb:Query
+        Resource: arn:aws:dynamodb:${self:provider.region}:*:table/${self:provider.environment.USERS_TABLE}
+      - Effect: "Allow"
+        Action:
+          - "xray:PutTraceSegments"
+          - "xray:PutTelemetryRecords"
+        Resource:
+          - "*"
   
   connectUser:
     handler: src/lambda/users/ConnectUser.handler
@@ -98,6 +151,23 @@ functions:
           path: /users/connect
           cors: true
           authorizer: Auth
+          reqValidatorName: RequestBodyValidator
+          documentation:
+            summary: Connect a new user
+            description: Connect a new user
+            requestModels:
+              'application/json': ConnectUser
+    iamRoleStatements:
+      - Effect: Allow
+        Action:
+          - dynamodb:Query
+        Resource: arn:aws:dynamodb:${self:provider.region}:*:table/${self:provider.environment.USERS_TABLE}
+      - Effect: "Allow"
+        Action:
+          - "xray:PutTraceSegments"
+          - "xray:PutTelemetryRecords"
+        Resource:
+          - "*"
   
   # addShoppingItem:
   #   handler: src/lambda/shopping/addShoppingItem.handler
@@ -170,6 +240,15 @@ resources:
         #         KeyType: RANGE
         #     Projection:
         #       ProjectionType: ALL # What attributes will be copied to an index
+
+    RequestBodyValidator:
+      Type: AWS::ApiGateway::RequestValidator
+      Properties:
+        Name: 'request-body-validator'
+        RestApiId:
+          Ref: ApiGatewayRestApi
+        ValidateRequestBody: true
+        ValidateRequestParameters: false
 #  Resources:
 #    NewResource:
 #      Type: AWS::S3::Bucket

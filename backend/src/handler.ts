@@ -2,7 +2,7 @@ import { APIGatewayProxyHandler, APIGatewayProxyResult, APIGatewayProxyEvent } f
 
 export const hello: APIGatewayProxyHandler = async (event: APIGatewayProxyEvent): Promise<APIGatewayProxyResult> => {
 
-  //console.log(event)
+  console.log(event)
   return {
     statusCode: 200,
     headers: {

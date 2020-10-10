@@ -47,8 +47,11 @@ class CheckUsersClass:
         code, resp = self.addUser(contents)
         logger.info("addUser(%s) returned %d: \'%s\'" % (contents, code, resp))
         assert(code == 400)
-        assert("Error" in resp.keys())
-        assert(resp['Error'] == "Invalid Request (no valid name)")
+        assert("Error" in resp.keys() or "message" in resp.keys())
+        if "Error" in resp.keys():
+            assert(resp['Error'] == "Invalid Request (no valid name)")
+        else:
+            assert(resp['message'] == "Invalid request body")
     
     @pytest.mark.run(order=1)
     def cleanupTable_check(self):
@@ -74,6 +77,15 @@ class CheckUsersClass:
         assert("Error" in resp.keys())
         assert(resp['Error'] == "User not found")
     
+    @pytest.mark.run(order=4)
+    def deleteInvalidUser2_check(self):
+        contents = { "name" : ""}
+        code, resp = self.deleteUser(contents)
+        logger.info("deleteUser(%s) returned %d: \'%s\'" % (contents, code, resp))
+        assert(code == 400)
+        assert("Error" in resp.keys())
+        assert(resp['Error'] == "Invalid Request (no valid name)")
+    
     @pytest.mark.run(order=3)
     def connectUser_check(self):
         contents = { "name" : USERNAME}
@@ -85,6 +97,15 @@ class CheckUsersClass:
         assert(resp['name'] == USERNAME)
     
     @pytest.mark.run(order=3)
+    def addExistingUser_check(self):
+        contents = { "name" : USERNAME}
+        code, resp = self.addUser(contents)
+        logger.info("addUser(%s) returned %d: \'%s\'" % (contents, code, resp))
+        assert(code == 401)
+        assert("Error" in resp.keys())
+        assert(resp['Error'] == "User already registered")
+    
+    @pytest.mark.run(order=3)
     def connectInvalidUser_check(self):
         contents = { "name" : "wrong name"}
         code, resp = self.connectUser(contents)
@@ -92,6 +113,15 @@ class CheckUsersClass:
         assert(code == 404)
         assert("Error" in resp.keys())
         assert(resp['Error'] == "User not found")
+    
+    @pytest.mark.run(order=3)
+    def connectInvalidUser2_check(self):
+        contents = { "name" : ""}
+        code, resp = self.connectUser(contents)
+        logger.info("connectUser(%s) returned %d: \'%s\'" % (contents, code, resp))
+        assert(code == 400)
+        assert("Error" in resp.keys())
+        assert(resp['Error'] == "Invalid Request (no valid name)")
 
 if __name__ == "__main__":
     logging.basicConfig(format='%(levelname)s:%(message)s', level=logging.DEBUG)
