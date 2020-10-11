@@ -74,7 +74,6 @@ provider:
   environment:
     USERS_TABLE: ${self:custom.usersTableName}
     BACKEND_NAME: "AWS"
-    # _X_AMZN_TRACE_ID: "toto"
 
 functions:
   Auth:

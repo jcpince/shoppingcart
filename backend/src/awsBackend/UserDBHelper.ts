@@ -91,6 +91,8 @@ export class AWSUserDBHelper implements IUserDBHelper {
 function connectDB() : DocumentClient {
     logger.debug("connectDB() called.");
     if (process.env.IS_OFFLINE) {
+        /* Workaround for offline testing */
+        process.env._X_AMZN_TRACE_ID = "0"
         logger.info('Creating a local DynamoDB instance')
         return new XAWS.DynamoDB.DocumentClient({
           region: 'localhost',
