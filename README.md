@@ -48,6 +48,8 @@ eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCIsImtpZCI6IlBTcXI2VXFLY3hHUW9xa3lQZTYwNiJ9.eyJ
 ## Check offline db contents:
 aws dynamodb list-tables --endpoint-url http://localhost:8000
 aws dynamodb scan --endpoint-url http://localhost:8000 --table-name "shoppingcart-users-dev"
+aws dynamodb scan --endpoint-url http://localhost:8000 --table-name "shoppingcart-groups-dev"
+aws dynamodb scan --endpoint-url http://localhost:8000 --table-name "shoppingcart-items-dev"
 
 
 
@@ -85,12 +87,12 @@ A table of shoppingcarts, each shopping cart has:
 - a list of items
 
 A table of shopping items, each item has:
+- a unique identifier
 - a privacy attribute (public, private)
-- an ownership (for private items)
-- a link
+- an owner group id (for private items)
+- a link to its picture
 - a description
 - a category
-- a picture
 
 ### S3 bucket:
 Simply contains the pictures of the items
