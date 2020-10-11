@@ -1,0 +1,14 @@
+{
+    "$schema": "http://json-schema.org/draft-04/schema#",
+    "title": "create-group",
+    "type": "object",
+    "properties": {
+        "name": {
+            "identifier": "string"
+        }
+    },
+    "required": [
+        "identifier"
+    ],
+    "additionalProperties": false
+}

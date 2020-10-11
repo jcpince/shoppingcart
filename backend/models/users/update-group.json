@@ -1,0 +1,18 @@
+{
+    "$schema": "http://json-schema.org/draft-04/schema#",
+    "title": "update-group",
+    "type": "object",
+    "properties": {
+        "name": {
+            "identifier": "string",
+            "addUser": "boolean",
+            "userid": "string"
+        }
+    },
+    "required": [
+        "identifier",
+        "addUser",
+        "userid"
+    ],
+    "additionalProperties": false
+}

@@ -32,6 +32,9 @@ plugins:
 
 custom:
   usersTableName: 'shoppingcart-users-${self:provider.stage}'
+  groupsTableName: 'shoppingcart-groups-${self:provider.stage}'
+  itemsTableName: 'shoppingcart-items-${self:provider.stage}'
+
   dynamodb:
     # If you only want to use DynamoDB Local in some stages, declare them here
       stages:
@@ -63,6 +66,15 @@ custom:
       - name: ConnectUser
         contentType: application/json
         schema: ${file(models/users/connect-user.json)}
+      - name: CreateGroup
+        contentType: application/json
+        schema: ${file(models/users/create-group.json)}
+      - name: DeleteGroup
+        contentType: application/json
+        schema: ${file(models/users/delete-group.json)}
+      - name: UpdateGroup
+        contentType: application/json
+        schema: ${file(models/users/update-group.json)}
 
 provider:
   name: aws
@@ -73,7 +85,11 @@ provider:
   
   environment:
     USERS_TABLE: ${self:custom.usersTableName}
+    GROUPS_TABLE: ${self:custom.groupsTableName}
+    ITEMS_TABLE: ${self:custom.itemsTableName}
     BACKEND_NAME: "AWS"
+    BUCKET_UUID: "kjjdkhfashj"
+    PICTURES_BUCKET: shoppingcart-${self:provider.environment.BUCKET_UUID}-${self:provider.stage}
 
 functions:
   Auth:
@@ -167,7 +183,88 @@ functions:
           - "xray:PutTelemetryRecords"
         Resource:
           - "*"
-  
+
+  createGroup:
+    handler: src/lambda/groups/AddGroup.handler
+    events:
+      - http:
+          method: put
+          path: /groups/add
+          cors: true
+          authorizer: Auth
+          reqValidatorName: RequestBodyValidator
+          documentation:
+            summary: Create a new group
+            description: Create a new group
+            requestModels:
+              'application/json': CreateGroup
+    iamRoleStatements:
+      - Effect: Allow
+        Action:
+          - dynamodb:PutItem
+          - dynamodb:Query
+        Resource: arn:aws:dynamodb:${self:provider.region}:*:table/${self:provider.environment.GROUPS_TABLE}
+      - Effect: "Allow"
+        Action:
+          - "xray:PutTraceSegments"
+          - "xray:PutTelemetryRecords"
+        Resource:
+          - "*"
+
+  deleteGroup:
+    handler: src/lambda/groups/DeleteGroup.handler
+    events:
+      - http:
+          method: delete
+          path: /groups/delete
+          cors: true
+          authorizer: Auth
+          reqValidatorName: RequestBodyValidator
+          documentation:
+            summary: Delete an existing group
+            description: Delete an existing group
+            requestModels:
+              'application/json': DeleteGroup
+    iamRoleStatements:
+      - Effect: Allow
+        Action:
+          - dynamodb:DeleteItem
+          - dynamodb:Query
+        Resource: arn:aws:dynamodb:${self:provider.region}:*:table/${self:provider.environment.GROUPS_TABLE}
+      - Effect: "Allow"
+        Action:
+          - "xray:PutTraceSegments"
+          - "xray:PutTelemetryRecords"
+        Resource:
+          - "*"
+
+  updateGroup:
+    handler: src/lambda/groups/UpdateGroup.handler
+    events:
+      - http:
+          method: patch
+          path: /groups/update
+          cors: true
+          authorizer: Auth
+          reqValidatorName: RequestBodyValidator
+          documentation:
+            summary: Modify an existing group
+            description: Modify an existing group by adding or removing a user.
+            requestModels:
+              'application/json': UpdateGroup
+    iamRoleStatements:
+      - Effect: Allow
+        Action:
+          - dynamodb:UpdateItem
+          - dynamodb:Query
+        Resource: arn:aws:dynamodb:${self:provider.region}:*:table/${self:provider.environment.GROUPS_TABLE}
+      - Effect: "Allow"
+        Action:
+          - "xray:PutTraceSegments"
+          - "xray:PutTelemetryRecords"
+        Resource:
+          - "*"
+
   # addShoppingItem:
   #   handler: src/lambda/shopping/addShoppingItem.handler
   #   events:
@@ -240,6 +337,30 @@ resources:
         #     Projection:
         #       ProjectionType: ALL # What attributes will be copied to an index
 
+    GroupsTable:
+      Type: AWS::DynamoDB::Table
+      Properties:
+        AttributeDefinitions:
+          - AttributeName: identifier
+            AttributeType: S
+        KeySchema:
+          - AttributeName: identifier
+            KeyType: HASH
+        BillingMode: PAY_PER_REQUEST
+        TableName: ${self:provider.environment.GROUPS_TABLE}
+
+    ItemsTable:
+      Type: AWS::DynamoDB::Table
+      Properties:
+        AttributeDefinitions:
+          - AttributeName: identifier
+            AttributeType: S
+        KeySchema:
+          - AttributeName: identifier
+            KeyType: HASH
+        BillingMode: PAY_PER_REQUEST
+        TableName: ${self:provider.environment.ITEMS_TABLE}
+
     RequestBodyValidator:
       Type: AWS::ApiGateway::RequestValidator
       Properties:
@@ -248,6 +369,39 @@ resources:
           Ref: ApiGatewayRestApi
         ValidateRequestBody: true
         ValidateRequestParameters: false
+
+    PicturesBucket:
+      Type: AWS::S3::Bucket
+      Properties:
+        BucketName: ${self:provider.environment.PICTURES_BUCKET}
+        CorsConfiguration:
+          CorsRules:
+            -
+              AllowedOrigins:
+                - '*'
+              AllowedHeaders:
+                - '*'
+              AllowedMethods:
+                - GET
+                - PUT
+                - POST
+                - DELETE
+                - HEAD
+              MaxAge: 3000
+
+      PicturesBucketPolicy:
+        Type: AWS::S3::BucketPolicy
+        Properties:
+          PolicyDocument:
+            Id: MyPicturesPolicy
+            Version: "2012-10-17"
+            Statement:
+              - Sid: PublicReadForGetBucketObjects
+                Effect: Allow
+                Principal: '*'
+                Action: s3:*
+                Resource: 'arn:aws:s3:::${self:provider.environment.PICTURES_BUCKET}/*'
+          Bucket: !Ref PicturesBucket
 #  Resources:
 #    NewResource:
 #      Type: AWS::S3::Bucket

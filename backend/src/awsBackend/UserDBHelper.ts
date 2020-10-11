@@ -1,30 +1,30 @@
-import * as AWS  from 'aws-sdk'
 import * as uuid from 'uuid'
 
 import { DocumentClient } from 'aws-sdk/clients/dynamodb'
+import { Logger } from 'winston';
 
 import { IUserDBHelper, IUserEntry } from '../backendInterface/UserDBHelper'
-import { createLogger } from '../utils/logger'
-
-const AWSXRay = require('aws-xray-sdk');
-
-const XAWS = AWSXRay.captureAWS(AWS)
-const logger = createLogger('AWSUserDB')
+import { AWSHelper } from './AwsHelper'
 
 export class AWSUserDBHelper implements IUserDBHelper {
-    tableName: string;
+    tableName : string;
+    private client : DocumentClient;
+    private logger : Logger;
 
     constructor(
-        private readonly table = process.env.USERS_TABLE,
-        private readonly client: DocumentClient = connectDB(),
-    ) {}
+        awsHelper: AWSHelper
+    ) {
+        this.tableName = process.env.USERS_TABLE,
+        this.logger = awsHelper.getLogger();
+        this.client = awsHelper.getDBClient();
+    }
 
     async hasUser(username: string) : Promise<boolean> {
-        logger.debug("AWSUserDB.hasUser(" + username + ") called from " +
-            this.table + ".");
+        this.logger.debug("AWSUserDB.hasUser(" + username + ") called from " +
+            this.tableName + ".");
 
         const result = await this.client.query({
-            TableName: this.table,
+            TableName: this.tableName,
             KeyConditionExpression: '#nm = :n',
             ExpressionAttributeValues: {
             ':n': username
@@ -38,11 +38,11 @@ export class AWSUserDBHelper implements IUserDBHelper {
     }
 
     async getUser(username: string) : Promise<IUserEntry> {
-        logger.debug("AWSUserDB.getUser(" + username + ") called from " +
-        this.table + ".");
+        this.logger.debug("AWSUserDB.getUser(" + username + ") called from " +
+        this.tableName + ".");
     
         const result = await this.client.query({
-            TableName: this.table,
+            TableName: this.tableName,
             KeyConditionExpression: '#nm = :n',
             ExpressionAttributeValues: {
             ':n': username
@@ -58,8 +58,8 @@ export class AWSUserDBHelper implements IUserDBHelper {
     }
 
     async addUser(username: string) : Promise<IUserEntry> {
-        logger.debug("AWSUserDB.addUser(" + username + ") called from " +
-        this.table + ".");
+        this.logger.debug("AWSUserDB.addUser(" + username + ") called from " +
+        this.tableName + ".");
 
         var userEntry : IUserEntry = {
             name: username,
@@ -67,7 +67,7 @@ export class AWSUserDBHelper implements IUserDBHelper {
         };
         
         await this.client.put({
-            TableName: this.table,
+            TableName: this.tableName,
             Item: userEntry
           }).promise()
         
@@ -75,10 +75,10 @@ export class AWSUserDBHelper implements IUserDBHelper {
     }
     
     async deleteUser(username: string) : Promise<boolean> {
-        logger.debug("AWSUserDB.deleteUser(" + username + ") called from " +
-        this.table + ".");
+        this.logger.debug("AWSUserDB.deleteUser(" + username + ") called from " +
+        this.tableName + ".");
         await this.client.delete({
-            TableName: this.table,
+            TableName: this.tableName,
             Key: {
                 "name": username
             }
@@ -87,18 +87,3 @@ export class AWSUserDBHelper implements IUserDBHelper {
         return true;
     }
 };
-
-function connectDB() : DocumentClient {
-    logger.debug("connectDB() called.");
-    if (process.env.IS_OFFLINE) {
-        /* Workaround for offline testing */
-        process.env._X_AMZN_TRACE_ID = "0"
-        logger.info('Creating a local DynamoDB instance')
-        return new XAWS.DynamoDB.DocumentClient({
-          region: 'localhost',
-          endpoint: 'http://localhost:8000'
-        })
-      }
-      logger.info('Creating a remote DynamoDB instance')
-      return new XAWS.DynamoDB.DocumentClient()
-}

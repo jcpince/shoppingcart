@@ -54,7 +54,7 @@ class CheckUsersClass:
         contents = { "name" : USERNAME}
         code, resp, time = self.addUser(contents)
         logger.info("addUser(%s) returned %d: \'%s\' in %f seconds" % (contents, code, resp, time))
-        assert(code == 200)
+        assert(code == 201)
         assert("name" in resp.keys())
         assert(resp['name'] == USERNAME)
     

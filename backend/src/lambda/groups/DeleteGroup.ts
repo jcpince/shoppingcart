@@ -1,31 +1,28 @@
 import { APIGatewayProxyHandler, APIGatewayProxyResult, APIGatewayProxyEvent } from 'aws-lambda'
 import { backendFactory } from '../../backendInterface/BackendFactory'
 
-const userDBHelper = backendFactory.getUserDBHelper();
+const groupDBHelper = backendFactory.getGroupDBHelper();
 
 export const handler: APIGatewayProxyHandler =
   async (event: APIGatewayProxyEvent):
     Promise<APIGatewayProxyResult> => {
 
-  const user = JSON.parse(event.body)
+  const group = JSON.parse(event.body)
   var returnCode = 500;
   var body = JSON.stringify({ "Error": "Server failure" });
 
-  console.log("Adding a user called " + user.name)
+  console.log("Deleting a group called " + group.identifier)
 
-  if ( user.name && user.name != "" ) {
-    if (await userDBHelper.hasUser(user.name)) {
-      returnCode = 401
-      body = JSON.stringify({ "Error": "User already registered" });
-    } else if (await userDBHelper.addUser(user.name)) {
-      returnCode = 201;
+  if ( group.identifier && group.identifier != "" ) {
+    if (await groupDBHelper.deleteGroup(group.identifier)) {
+      returnCode = 200;
       body = JSON.stringify({
-        "name": user.name
+        "identifier": group.identifier
       })
     }
   } else {
     returnCode = 400
-    body = JSON.stringify({ "Error": "Invalid Request (no valid name)" });
+    body = JSON.stringify({ "Error": "Invalid Request (no valid identifier)" });
   }
 
   return {
