@@ -33,7 +33,8 @@ plugins:
 custom:
   usersTableName: 'shoppingcart-users-${self:provider.stage}'
   groupsTableName: 'shoppingcart-groups-${self:provider.stage}'
-  itemsTableName: 'shoppingcart-items-${self:provider.stage}'
+  storeTableName: 'shoppingcart-store-${self:provider.stage}'
+  cartsTableName: 'shoppingcart-carts-${self:provider.stage}'
 
   dynamodb:
     # If you only want to use DynamoDB Local in some stages, declare them here
@@ -86,10 +87,12 @@ provider:
   environment:
     USERS_TABLE: ${self:custom.usersTableName}
     GROUPS_TABLE: ${self:custom.groupsTableName}
-    ITEMS_TABLE: ${self:custom.itemsTableName}
+    STORE_TABLE: ${self:custom.storeTableName}
+    CARTS_TABLE: ${self:custom.cartsTableName}
     BACKEND_NAME: "AWS"
     BUCKET_UUID: "kjjdkhfashj"
     PICTURES_BUCKET: shoppingcart-${self:provider.environment.BUCKET_UUID}-${self:provider.stage}
+    WINSTON_LOOGER_LEVEL: "debug"
 
 functions:
   Auth:
@@ -327,15 +330,6 @@ resources:
             KeyType: HASH
         BillingMode: PAY_PER_REQUEST
         TableName: ${self:provider.environment.USERS_TABLE}
-        # LocalSecondaryIndexes:
-        #   - IndexName: userIndex
-        #     KeySchema:
-        #       - AttributeName: uuid
-        #         KeyType: HASH
-        #       - AttributeName: name
-        #         KeyType: RANGE
-        #     Projection:
-        #       ProjectionType: ALL # What attributes will be copied to an index
 
     GroupsTable:
       Type: AWS::DynamoDB::Table
@@ -349,17 +343,48 @@ resources:
         BillingMode: PAY_PER_REQUEST
         TableName: ${self:provider.environment.GROUPS_TABLE}
 
-    ItemsTable:
+    StoreTable:
       Type: AWS::DynamoDB::Table
       Properties:
         AttributeDefinitions:
           - AttributeName: identifier
             AttributeType: S
+          - AttributeName: name
+            AttributeType: S
+          - AttributeName: category
+            AttributeType: S
         KeySchema:
           - AttributeName: identifier
             KeyType: HASH
+          - AttributeName: name
+            KeyType: RANGE
         BillingMode: PAY_PER_REQUEST
-        TableName: ${self:provider.environment.ITEMS_TABLE}
+        TableName: ${self:provider.environment.STORE_TABLE}
+        LocalSecondaryIndexes:
+          - IndexName: userIndex
+            KeySchema:
+              - AttributeName: identifier
+                KeyType: HASH
+              - AttributeName: category
+                KeyType: RANGE
+            Projection:
+              ProjectionType: ALL # What attributes will be copied to an index
+
+    CartsTable:
+      Type: AWS::DynamoDB::Table
+      Properties:
+        AttributeDefinitions:
+          - AttributeName: identifier
+            AttributeType: S
+          - AttributeName: groupid
+            AttributeType: S
+        KeySchema:
+          - AttributeName: identifier
+            KeyType: HASH
+          - AttributeName: groupid
+            KeyType: RANGE
+        BillingMode: PAY_PER_REQUEST
+        TableName: ${self:provider.environment.CARTS_TABLE}
 
     RequestBodyValidator:
       Type: AWS::ApiGateway::RequestValidator

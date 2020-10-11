@@ -51,13 +51,13 @@ export class AWSGroupDBHelper implements IGroupDBHelper {
         this.logger.debug("AWSGroupDB.deleteGroup(" + group_id + ") called from " +
             this.tableName + ".");
 
-        await this.client.delete({
+        const result = await this.client.delete({
             TableName: this.tableName,
             Key: {
                 "identifier": group_id
             }
           }).promise()
-
+        console.log("delete group returned " + JSON.stringify(result));
         return true;
     }
 

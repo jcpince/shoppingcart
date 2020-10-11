@@ -93,6 +93,7 @@ A table of shopping items, each item has:
 - a link to its picture
 - a description
 - a category
+- a name
 
 ### S3 bucket:
 Simply contains the pictures of the items
