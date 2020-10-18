@@ -3,10 +3,14 @@
     "title": "update-group",
     "type": "object",
     "properties": {
-        "name": {
-            "identifier": "string",
-            "addUser": "boolean",
-            "userid": "string"
+        "identifier": {
+            "type": "string"
+        },
+        "userId": {
+            "type": "string"
+        },
+        "addUser": {
+            "type": "boolean"
         }
     },
     "required": [

@@ -3,8 +3,8 @@
     "title": "delete-group",
     "type": "object",
     "properties": {
-        "name": {
-            "identifier": "string"
+        "identifier": {
+            "type": "string"
         }
     },
     "required": [
