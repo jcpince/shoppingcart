@@ -20,6 +20,6 @@ export interface ICartDBHelper {
     getCart(name: string, owner: string) : Promise<ICartEntry>;
     getOwnerCarts(group: string) : Promise<ICartEntry[]>;
     getGroupCarts(group: string) : Promise<ICartEntry[]>;
-    pushItem(item: ICartItem) : Promise<boolean>;
-    removeItem(item: ICartItem) : Promise<boolean>;
+    pushItem(cartid:string, item: ICartItem) : Promise<boolean>;
+    removeItem(cartid:string, item: ICartItem) : Promise<boolean>;
 }

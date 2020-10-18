@@ -11,9 +11,11 @@ const XAWS = AWSXRay.captureAWS(AWS)
 
 export class AWSHelper {
     static logger = createLogger('AWS')
+
     constructor(
         private readonly dynamodb: AWS.DynamoDB = new XAWS.DynamoDB(),
-        private readonly dbclient: DocumentClient = AWSHelper.connectDBClient()
+        private readonly dbclient: DocumentClient = AWSHelper.connectDBClient(),
+        private readonly s3: AWS.S3 = new XAWS.S3({ signatureVersion: 'v4' })
     )
     {
         this.applyWAs()
@@ -21,6 +23,10 @@ export class AWSHelper {
 
     public getDBClient() : DocumentClient {
         return this.dbclient;
+    }
+
+    public getS3() : AWS.S3 {
+        return this.s3;
     }
 
     public getDynamoDB() : AWS.DynamoDB {

@@ -14,6 +14,8 @@ Future ideas:
 
 ## Run the test offline
 
+> sls dynamodb install # if never done...
+
 > sls dynamodb start --migrate &
 
 > sls offline
@@ -49,7 +51,13 @@ eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCIsImtpZCI6IlBTcXI2VXFLY3hHUW9xa3lQZTYwNiJ9.eyJ
 aws dynamodb list-tables --endpoint-url http://localhost:8000
 aws dynamodb scan --endpoint-url http://localhost:8000 --table-name "shoppingcart-users-dev"
 aws dynamodb scan --endpoint-url http://localhost:8000 --table-name "shoppingcart-groups-dev"
-aws dynamodb scan --endpoint-url http://localhost:8000 --table-name "shoppingcart-items-dev"
+aws dynamodb scan --endpoint-url http://localhost:8000 --table-name "shoppingcart-store-dev"
+aws dynamodb scan --endpoint-url http://localhost:8000 --table-name "shoppingcart-carts-dev"
+
+**or**
+
+make list-tables
+make [scan-users | scan-groups | scan-store | scan-carts | scan-all]
 
 
 

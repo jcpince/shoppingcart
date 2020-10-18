@@ -6,7 +6,7 @@
         "identifier": {
             "type": "string"
         },
-        "userId": {
+        "userid": {
             "type": "string"
         },
         "addUser": {

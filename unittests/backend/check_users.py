@@ -28,7 +28,7 @@ if os.environ['SLS_MODE'] == "OFFLINE":
     DEFAULT_TIMEOUT = 0.6
 else:
     # large timeout for first connection...
-    DEFAULT_TIMEOUT = 1.2
+    DEFAULT_TIMEOUT = 1.4
 
 class CheckUsersClass:
     

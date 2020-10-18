@@ -1,0 +1,36 @@
+{
+    "$schema": "http://json-schema.org/draft-04/schema#",
+    "title": "item",
+    "type": "object",
+    "properties": {
+        "name": {
+            "type": "string"
+        },
+        "category": {
+            "type": "string"
+        },
+        "identifier": {
+            "type": "string"
+        },
+        "description": {
+            "type": "string"
+        },
+        "is_public": {
+            "type": "boolean"
+        },
+        "owner": {
+            "type": "string"
+        },
+        "pic_link": {
+            "type": "string"
+        }
+    },
+    "required": [
+        "name",
+        "category",
+        "description",
+        "is_public",
+        "owner"
+    ],
+    "additionalProperties": false
+}

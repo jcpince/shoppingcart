@@ -76,6 +76,12 @@ custom:
       - name: UpdateGroup
         contentType: application/json
         schema: ${file(models/users/update-group.json)}
+      - name: CreateItem
+        contentType: application/json
+        schema: ${file(models/store/item.json)}
+      - name: DeleteItem
+        contentType: application/json
+        schema: ${file(models/store/item.json)}
 
 provider:
   name: aws
@@ -89,9 +95,10 @@ provider:
     GROUPS_TABLE: ${self:custom.groupsTableName}
     STORE_TABLE: ${self:custom.storeTableName}
     CARTS_TABLE: ${self:custom.cartsTableName}
+    S3_BUCKET_UUID: b7cdejks
+    PICTURES_BUCKET_NAME: shoppingcart-${self:provider.environment.S3_BUCKET_UUID}-${self:provider.stage}
+    URL_EXPIRATION: 300
     BACKEND_NAME: "AWS"
-    BUCKET_UUID: "kjjdkhfashj"
-    PICTURES_BUCKET: shoppingcart-${self:provider.environment.BUCKET_UUID}-${self:provider.stage}
     WINSTON_LOOGER_LEVEL: "debug"
 
 functions:
@@ -268,6 +275,101 @@ functions:
         Resource:
           - "*"
 
+  createItem:
+    handler: src/lambda/store/CreateItem.handler
+    events:
+      - http:
+          method: put
+          path: /store/create_item
+          cors: true
+          authorizer: Auth
+          reqValidatorName: RequestBodyValidator
+          documentation:
+            summary: Add a new product to the store
+            description: Modify the store by adding a new product.
+            requestModels:
+              'application/json': CreateItem
+    iamRoleStatements:
+      - Effect: Allow
+        Action:
+          - dynamodb:PutItem
+          - dynamodb:Query
+        Resource: arn:aws:dynamodb:${self:provider.region}:*:table/${self:provider.environment.STORE_TABLE}
+      - Effect: "Allow"
+        Action:
+          - "xray:PutTraceSegments"
+          - "xray:PutTelemetryRecords"
+        Resource:
+          - "*"
+
+  deleteItem:
+    handler: src/lambda/store/DeleteItem.handler
+    events:
+      - http:
+          method: delete
+          path: /store/delete_item
+          cors: true
+          authorizer: Auth
+          reqValidatorName: RequestBodyValidator
+          documentation:
+            summary: Remove a product from the store
+            description: Modify the store by removing a product.
+            requestModels:
+              'application/json': DeleteItem
+    iamRoleStatements:
+      - Effect: Allow
+        Action:
+          - dynamodb:DeleteItem
+          - dynamodb:Query
+        Resource: arn:aws:dynamodb:${self:provider.region}:*:table/${self:provider.environment.STORE_TABLE}
+      - Effect: "Allow"
+        Action:
+          - "xray:PutTraceSegments"
+          - "xray:PutTelemetryRecords"
+        Resource:
+          - "*"
+
+  getItems:
+    handler: src/lambda/store/GetItems.handler
+    events:
+      - http:
+          method: get
+          path: /store/items
+          cors: true
+          authorizer: Auth
+    iamRoleStatements:
+      - Effect: Allow
+        Action:
+          - dynamodb:GetItem
+          - dynamodb:Query
+        Resource: arn:aws:dynamodb:${self:provider.region}:*:table/${self:provider.environment.STORE_TABLE}/*
+      - Effect: "Allow"
+        Action:
+          - "xray:PutTraceSegments"
+          - "xray:PutTelemetryRecords"
+        Resource:
+          - "*"
+
+  clearStore:
+    handler: src/lambda/store/ClearStore.handler
+    events:
+      - http:
+          method: delete
+          path: /store/clear
+          cors: true
+          authorizer: Auth
+    iamRoleStatements:
+      - Effect: Allow
+        Action:
+          - dynamodb:Scan
+          - dynamodb:DeleteItem
+        Resource: arn:aws:dynamodb:${self:provider.region}:*:table/${self:provider.environment.STORE_TABLE}
+      - Effect: "Allow"
+        Action:
+          - "xray:PutTraceSegments"
+          - "xray:PutTelemetryRecords"
+        Resource:
+          - "*"
   # addShoppingItem:
   #   handler: src/lambda/shopping/addShoppingItem.handler
   #   events:
@@ -353,6 +455,8 @@ resources:
             AttributeType: S
           - AttributeName: category
             AttributeType: S
+          - AttributeName: owner
+            AttributeType: S
         KeySchema:
           - AttributeName: identifier
             KeyType: HASH
@@ -360,15 +464,27 @@ resources:
             KeyType: RANGE
         BillingMode: PAY_PER_REQUEST
         TableName: ${self:provider.environment.STORE_TABLE}
-        LocalSecondaryIndexes:
-          - IndexName: userIndex
+        GlobalSecondaryIndexes:
+          - IndexName: CategoryIndex
             KeySchema:
-              - AttributeName: identifier
-                KeyType: HASH
               - AttributeName: category
+                KeyType: HASH
+            Projection:
+              ProjectionType: ALL
+          - IndexName: NameIndex
+            KeySchema:
+              - AttributeName: name
+                KeyType: HASH
+              - AttributeName: owner
                 KeyType: RANGE
             Projection:
-              ProjectionType: ALL # What attributes will be copied to an index
+              ProjectionType: ALL
+          - IndexName: OwnerIndex
+            KeySchema:
+              - AttributeName: owner
+                KeyType: HASH
+            Projection:
+              ProjectionType: ALL
 
     CartsTable:
       Type: AWS::DynamoDB::Table
@@ -398,7 +514,7 @@ resources:
     PicturesBucket:
       Type: AWS::S3::Bucket
       Properties:
-        BucketName: ${self:provider.environment.PICTURES_BUCKET}
+        BucketName: ${self:provider.environment.PICTURES_BUCKET_NAME}
         CorsConfiguration:
           CorsRules:
             -
@@ -414,19 +530,19 @@ resources:
                 - HEAD
               MaxAge: 3000
 
-      PicturesBucketPolicy:
-        Type: AWS::S3::BucketPolicy
-        Properties:
-          PolicyDocument:
-            Id: MyPicturesPolicy
-            Version: "2012-10-17"
-            Statement:
-              - Sid: PublicReadForGetBucketObjects
-                Effect: Allow
-                Principal: '*'
-                Action: s3:*
-                Resource: 'arn:aws:s3:::${self:provider.environment.PICTURES_BUCKET}/*'
-          Bucket: !Ref PicturesBucket
+    PicturesBucketPolicy:
+      Type: AWS::S3::BucketPolicy
+      Properties:
+        PolicyDocument:
+          Id: MyPicturesPolicy
+          Version: "2012-10-17"
+          Statement:
+            - Sid: PublicReadForGetBucketObjects
+              Effect: Allow
+              Principal: '*'
+              Action: s3:*
+              Resource: 'arn:aws:s3:::${self:provider.environment.PICTURES_BUCKET_NAME}/*'
+        Bucket: !Ref PicturesBucket
 #  Resources:
 #    NewResource:
 #      Type: AWS::S3::Bucket
