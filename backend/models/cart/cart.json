@@ -1,0 +1,29 @@
+{
+    "$schema": "http://json-schema.org/draft-04/schema#",
+    "title": "cart",
+    "type": "object",
+    "properties": {
+        "name": {
+            "type": "string"
+        },
+        "identifier": {
+            "type": "string"
+        },
+        "description": {
+            "type": "string"
+        },
+        "ownerid": {
+            "type": "string"
+        },
+        "groupid": {
+            "type": "string"
+        },
+        "pic_link": {
+            "type": "string"
+        }
+    },
+    "required": [
+        "ownerid"
+    ],
+    "additionalProperties": false
+}

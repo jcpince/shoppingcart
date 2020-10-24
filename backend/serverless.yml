@@ -35,6 +35,7 @@ custom:
   groupsTableName: 'shoppingcart-groups-${self:provider.stage}'
   storeTableName: 'shoppingcart-store-${self:provider.stage}'
   cartsTableName: 'shoppingcart-carts-${self:provider.stage}'
+  cartsContentsTableName: 'shoppingcart-cartscontents-${self:provider.stage}'
 
   dynamodb:
     # If you only want to use DynamoDB Local in some stages, declare them here
@@ -50,7 +51,7 @@ custom:
         convertEmptyValues: true
       # Uncomment only if you already have a DynamoDB running locally
       # noStart: true
-  
+
   documentation:
     api:
       info:
@@ -82,6 +83,27 @@ custom:
       - name: DeleteItem
         contentType: application/json
         schema: ${file(models/store/item.json)}
+      - name: CreateCart
+        contentType: application/json
+        schema: ${file(models/cart/cart.json)}
+      - name: DeleteCart
+        contentType: application/json
+        schema: ${file(models/cart/cart.json)}
+      - name: ListCart
+        contentType: application/json
+        schema: ${file(models/cart/cart.json)}
+      - name: EmptyCart
+        contentType: application/json
+        schema: ${file(models/cart/cart.json)}
+      - name: AddCartItem
+        contentType: application/json
+        schema: ${file(models/cart/cart-item.json)}
+      - name: RemoveCartItem
+        contentType: application/json
+        schema: ${file(models/cart/cart-item.json)}
+      - name: ModifyCartItem
+        contentType: application/json
+        schema: ${file(models/cart/cart-item.json)}
 
 provider:
   name: aws
@@ -89,12 +111,13 @@ provider:
 
   stage: ${opt:stage, 'dev'}
   region: ${opt:region, 'eu-west-3'}
-  
+
   environment:
     USERS_TABLE: ${self:custom.usersTableName}
     GROUPS_TABLE: ${self:custom.groupsTableName}
     STORE_TABLE: ${self:custom.storeTableName}
     CARTS_TABLE: ${self:custom.cartsTableName}
+    CARTS_CONTENTS_TABLE: ${self:custom.cartsContentsTableName}
     S3_BUCKET_UUID: b7cdejks
     PICTURES_BUCKET_NAME: shoppingcart-${self:provider.environment.S3_BUCKET_UUID}-${self:provider.stage}
     URL_EXPIRATION: 300
@@ -105,15 +128,16 @@ functions:
   Auth:
     handler: src/lambda/auth/auth0Authorizer.handler
 
-  hello:
-    handler: src/handler.hello
-    events:
-      - http:
-          method: get
-          path: /toto
-          cors: true
-          authorizer: Auth
-  
+  # One resource too much!!!
+  # hello:
+  #   handler: src/handler.hello
+  #   events:
+  #     - http:
+  #         method: get
+  #         path: /toto
+  #         cors: true
+  #         authorizer: Auth
+
   registerUser:
     handler: src/lambda/users/AddUser.handler
     events:
@@ -140,7 +164,7 @@ functions:
           - "xray:PutTelemetryRecords"
         Resource:
           - "*"
-  
+
   unregisterUser:
     handler: src/lambda/users/DelUser.handler
     events:
@@ -167,7 +191,7 @@ functions:
           - "xray:PutTelemetryRecords"
         Resource:
           - "*"
-  
+
   connectUser:
     handler: src/lambda/users/ConnectUser.handler
     events:
@@ -370,55 +394,217 @@ functions:
           - "xray:PutTelemetryRecords"
         Resource:
           - "*"
-  # addShoppingItem:
-  #   handler: src/lambda/shopping/addShoppingItem.handler
-  #   events:
-  #     - http:
-  #         method: post
-  #         path: /cart
-  #         cors: true
-    
-#    The following are a few example events you can configure
-#    NOTE: Please make sure to change your handler code to work with those events
-#    Check the event documentation for details
-#    events:
-#      - http:
-#          path: users/create
-#          method: get
-#      - websocket: $connect
-#      - s3: ${env:BUCKET}
-#      - schedule: rate(10 minutes)
-#      - sns: greeter-topic
-#      - stream: arn:aws:dynamodb:region:XXXXXX:table/foo/stream/1970-01-01T00:00:00.000
-#      - alexaSkill: amzn1.ask.skill.xx-xx-xx-xx
-#      - alexaSmartHome: amzn1.ask.skill.xx-xx-xx-xx
-#      - iot:
-#          sql: "SELECT * FROM 'some_topic'"
-#      - cloudwatchEvent:
-#          event:
-#            source:
-#              - "aws.ec2"
-#            detail-type:
-#              - "EC2 Instance State-change Notification"
-#            detail:
-#              state:
-#                - pending
-#      - cloudwatchLog: '/aws/lambda/hello'
-#      - cognitoUserPool:
-#          pool: MyUserPool
-#          trigger: PreSignUp
-#      - alb:
-#          listenerArn: arn:aws:elasticloadbalancing:us-east-1:XXXXXX:listener/app/my-load-balancer/50dc6c495c0c9188/
-#          priority: 1
-#          conditions:
-#            host: example.com
-#            path: /hello
 
-#    Define function environment variables here
-#    environment:
-#      variable2: value2
+  createCart:
+    handler: src/lambda/cart/CreateCart.handler
+    events:
+      - http:
+          method: put
+          path: /cart/create_cart
+          cors: true
+          authorizer: Auth
+          reqValidatorName: RequestBodyValidator
+          documentation:
+            summary: Create a new cart.
+            description: Create a new cart.
+            requestModels:
+              'application/json': CreateCart
+    iamRoleStatements:
+      - Effect: Allow
+        Action:
+          - dynamodb:PutItem
+        Resource: arn:aws:dynamodb:${self:provider.region}:*:table/${self:provider.environment.CARTS_TABLE}
+      - Effect: Allow
+        Action:
+          - dynamodb:Query
+        Resource: arn:aws:dynamodb:${self:provider.region}:*:table/${self:provider.environment.CARTS_TABLE}/index/NameIndex
+      - Effect: "Allow"
+        Action:
+          - "xray:PutTraceSegments"
+          - "xray:PutTelemetryRecords"
+        Resource:
+          - "*"
 
-# you can add CloudFormation resource templates here
+  deleteCart:
+    handler: src/lambda/cart/DeleteCart.handler
+    events:
+      - http:
+          method: delete
+          path: /cart/delete_cart
+          cors: true
+          authorizer: Auth
+          reqValidatorName: RequestBodyValidator
+          documentation:
+            summary: Delete an existing cart.
+            description: Delete an existing cart.
+            requestModels:
+              'application/json': DeleteCart
+    iamRoleStatements:
+      - Effect: Allow
+        Action:
+          - dynamodb:DeleteItem
+        Resource: arn:aws:dynamodb:${self:provider.region}:*:table/${self:provider.environment.CARTS_TABLE}
+      - Effect: "Allow"
+        Action:
+          - "xray:PutTraceSegments"
+          - "xray:PutTelemetryRecords"
+        Resource:
+          - "*"
+
+  emptyCart:
+    handler: src/lambda/cart/EmptyCart.handler
+    events:
+      - http:
+          method: patch
+          path: /cart/empty
+          cors: true
+          authorizer: Auth
+          reqValidatorName: RequestBodyValidator
+          documentation:
+            summary: Empty a given cart.
+            description: Empty a given cart.
+            requestModels:
+              'application/json': EmptyCart
+    iamRoleStatements:
+      - Effect: Allow
+        Action:
+          - dynamodb:DeleteItem
+        Resource: arn:aws:dynamodb:${self:provider.region}:*:table/${self:provider.environment.CARTS_CONTENTS_TABLE}
+      - Effect: Allow
+        Action:
+          - dynamodb:Query
+        Resource: arn:aws:dynamodb:${self:provider.region}:*:table/${self:provider.environment.CARTS_CONTENTS_TABLE}/index/CartIndex
+      - Effect: "Allow"
+        Action:
+          - "xray:PutTraceSegments"
+          - "xray:PutTelemetryRecords"
+        Resource:
+          - "*"
+
+  clearCarts:
+    handler: src/lambda/cart/ClearCarts.handler
+    events:
+      - http:
+          method: delete
+          path: /cart/clear
+          cors: true
+          authorizer: Auth
+    iamRoleStatements:
+      - Effect: Allow
+        Action:
+          - dynamodb:Scan
+          - dynamodb:DeleteItem
+        Resource: arn:aws:dynamodb:${self:provider.region}:*:table/${self:provider.environment.CARTS_TABLE}
+      - Effect: Allow
+        Action:
+          - dynamodb:Scan
+          - dynamodb:DeleteItem
+        Resource: arn:aws:dynamodb:${self:provider.region}:*:table/${self:provider.environment.CARTS_CONTENTS_TABLE}
+      - Effect: "Allow"
+        Action:
+          - "xray:PutTraceSegments"
+          - "xray:PutTelemetryRecords"
+        Resource:
+          - "*"
+
+  getCartItems:
+    handler: src/lambda/cart/GetItems.handler
+    events:
+      - http:
+          method: get
+          path: /cart/{cartid}
+          cors: true
+          authorizer: Auth
+    iamRoleStatements:
+      - Effect: Allow
+        Action:
+          - dynamodb:Query
+        Resource: arn:aws:dynamodb:${self:provider.region}:*:table/${self:provider.environment.CARTS_CONTENTS_TABLE}/index/CartIndex
+      - Effect: "Allow"
+        Action:
+          - "xray:PutTraceSegments"
+          - "xray:PutTelemetryRecords"
+        Resource:
+          - "*"
+
+  addCartItem:
+    handler: src/lambda/cart/AddItem.handler
+    events:
+      - http:
+          method: put
+          path: /cart/items
+          cors: true
+          authorizer: Auth
+          reqValidatorName: RequestBodyValidator
+          documentation:
+            summary: Add an item to a given cart.
+            description: Add an item to a given cart.
+            requestModels:
+              'application/json': AddCartItem
+    iamRoleStatements:
+      - Effect: Allow
+        Action:
+          - dynamodb:PutItem
+        Resource: arn:aws:dynamodb:${self:provider.region}:*:table/${self:provider.environment.CARTS_CONTENTS_TABLE}
+      - Effect: "Allow"
+        Action:
+          - "xray:PutTraceSegments"
+          - "xray:PutTelemetryRecords"
+        Resource:
+          - "*"
+
+  removeCartItem:
+    handler: src/lambda/cart/RemoveItem.handler
+    events:
+      - http:
+          method: delete
+          path: /cart/items
+          cors: true
+          authorizer: Auth
+          reqValidatorName: RequestBodyValidator
+          documentation:
+            summary: Remove an item from a given cart.
+            description: Remove an item from a given cart.
+            requestModels:
+              'application/json': RemoveCartItem
+    iamRoleStatements:
+      - Effect: Allow
+        Action:
+          - dynamodb:DeleteItem
+        Resource: arn:aws:dynamodb:${self:provider.region}:*:table/${self:provider.environment.CARTS_CONTENTS_TABLE}
+      - Effect: "Allow"
+        Action:
+          - "xray:PutTraceSegments"
+          - "xray:PutTelemetryRecords"
+        Resource:
+          - "*"
+
+  modifyCartItem:
+    handler: src/lambda/cart/ChangeItemQuantity.handler
+    events:
+      - http:
+          method: patch
+          path: /cart/items
+          cors: true
+          authorizer: Auth
+          reqValidatorName: RequestBodyValidator
+          documentation:
+            summary: Modify an item from a given cart.
+            description: Modify an item quantity from a given cart.
+            requestModels:
+              'application/json': ModifyCartItem
+    iamRoleStatements:
+      - Effect: Allow
+        Action:
+          - dynamodb:UpdateItem
+        Resource: arn:aws:dynamodb:${self:provider.region}:*:table/${self:provider.environment.CARTS_CONTENTS_TABLE}
+      - Effect: "Allow"
+        Action:
+          - "xray:PutTraceSegments"
+          - "xray:PutTelemetryRecords"
+        Resource:
+          - "*"
+
 resources:
   Resources:
     UsersTable:
@@ -492,15 +678,45 @@ resources:
         AttributeDefinitions:
           - AttributeName: identifier
             AttributeType: S
-          - AttributeName: groupid
+          - AttributeName: ownerid
+            AttributeType: S
+          - AttributeName: name
             AttributeType: S
         KeySchema:
           - AttributeName: identifier
             KeyType: HASH
-          - AttributeName: groupid
-            KeyType: RANGE
         BillingMode: PAY_PER_REQUEST
         TableName: ${self:provider.environment.CARTS_TABLE}
+        GlobalSecondaryIndexes:
+          - IndexName: NameIndex
+            KeySchema:
+              - AttributeName: name
+                KeyType: HASH
+              - AttributeName: ownerid
+                KeyType: RANGE
+            Projection:
+              ProjectionType: ALL
+
+    CartsContentsTable:
+      Type: AWS::DynamoDB::Table
+      Properties:
+        AttributeDefinitions:
+          - AttributeName: identifier
+            AttributeType: S
+          - AttributeName: cartid
+            AttributeType: S
+        KeySchema:
+          - AttributeName: identifier
+            KeyType: HASH
+        BillingMode: PAY_PER_REQUEST
+        TableName: ${self:provider.environment.CARTS_CONTENTS_TABLE}
+        GlobalSecondaryIndexes:
+          - IndexName: CartIndex
+            KeySchema:
+              - AttributeName: cartid
+                KeyType: HASH
+            Projection:
+              ProjectionType: ALL
 
     RequestBodyValidator:
       Type: AWS::ApiGateway::RequestValidator
@@ -543,12 +759,3 @@ resources:
               Action: s3:*
               Resource: 'arn:aws:s3:::${self:provider.environment.PICTURES_BUCKET_NAME}/*'
         Bucket: !Ref PicturesBucket
-#  Resources:
-#    NewResource:
-#      Type: AWS::S3::Bucket
-#      Properties:
-#        BucketName: my-new-bucket
-#  Outputs:
-#     NewOutput:
-#       Description: "Description for the output"
-#       Value: "Some output value"

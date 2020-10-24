@@ -1,25 +1,30 @@
 export interface ICartEntry {
     name: string;
     identifier: string;
-    owner: string;
-    group: string;
-    cart_tablename: string;
+    description: string;
+    ownerid: string;
+    groupid: string;
+    pic_link: string;
 }
 
 export interface ICartItem {
+    identifier: string;
+    userid: string;
+    cartid: string;
     itemid: string;
     quantity: number;
     unit: string;
 }
 
-
 export interface ICartDBHelper {
     tableName: string;
+    clearCarts() : Promise<boolean>;
     createCart(cart: ICartEntry) : Promise<boolean>;
-    deleteCart(cart: ICartEntry) : Promise<boolean>;
+    deleteCart(cartid: string) : Promise<boolean>;
+    emptyCart(cartid: string) : Promise<boolean>;
     getCart(name: string, owner: string) : Promise<ICartEntry>;
-    getOwnerCarts(group: string) : Promise<ICartEntry[]>;
-    getGroupCarts(group: string) : Promise<ICartEntry[]>;
-    pushItem(cartid:string, item: ICartItem) : Promise<boolean>;
-    removeItem(cartid:string, item: ICartItem) : Promise<boolean>;
+    getCartItems(cartid: string) : Promise<ICartItem[]>;
+    pushItem(item: ICartItem) : Promise<boolean>;
+    removeItem(item: ICartItem) : Promise<boolean>;
+    changeItemQuantity(item: ICartItem) : Promise<boolean>;
 }

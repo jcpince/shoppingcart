@@ -49,4 +49,7 @@ scan-store:
 scan-carts:
 	aws dynamodb scan --endpoint-url $(DBSERVER) --table-name "shoppingcart-carts-dev"
 
-scan-all: scan-users scan-groups scan-store scan-carts
+scan-carts-contents:
+	aws dynamodb scan --endpoint-url $(DBSERVER) --table-name "shoppingcart-cartscontents-dev"
+
+scan-all: scan-users scan-groups scan-store scan-carts  scan-carts-contents

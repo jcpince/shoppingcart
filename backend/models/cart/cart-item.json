@@ -1,0 +1,31 @@
+{
+    "$schema": "http://json-schema.org/draft-04/schema#",
+    "title": "item",
+    "type": "object",
+    "properties": {
+        "identifier": {
+            "type": "string"
+        },
+        "userid": {
+            "type": "string"
+        },
+        "cartid": {
+            "type": "string"
+        },
+        "itemid": {
+            "type": "string"
+        },
+        "quantity": {
+            "type": "number"
+        },
+        "unit": {
+            "type": "string"
+        }
+    },
+    "required": [
+        "userid",
+        "cartid",
+        "itemid"
+    ],
+    "additionalProperties": false
+}
